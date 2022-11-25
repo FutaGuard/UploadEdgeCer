@@ -3,6 +3,7 @@ import config
 from typing import List
 from json.decoder import JSONDecodeError
 
+
 class Notify:
     def __init__(self) -> None:
         self.endpoint = f'https://api.telegram.org/bot{config}/'
@@ -12,6 +13,7 @@ class Notify:
         payload = {'chat_id': chat_id, 'text': text}
         url = self.endpoint + 'sendMessage'
         self.client.post(url, json=payload)
+
 
 class CFAPI:
     def __init__(self, client: Session) -> None:
@@ -39,6 +41,31 @@ class CFAPI:
         except JSONDecodeError:
             print('list cert parse JSON err')
 
+    def create_ssl(self, zoneid: str, domain: str) -> dict:
+        url = self.endpoint + 'custom_certificates'
+        prikey = open(
+            f'/home/ubuntu/.acme.sh/*.{domain}/*.{domain}.key', 'r').read()
+        cert = open(
+            f'/home/ubuntu/.acme.sh/*.{domain}/fullchain.cer', 'r').read()
+
+        payload = {
+            'certificate': cert,
+            'private_key': prikey,
+            'bundle_method': 'ubiquitous',
+            'type': 'sni_custom'
+        }
+        r = self.client.post(url, json=payload)
+        if not r.ok:
+            print('create ssl failed')
+            print(r.text)
+            return
+
+        try:
+            return r.json()
+        except JSONDecodeError:
+            print('create ssl JSON parse error')
+            print(r.text)
+
     def edit_ssl(self, zoneid: str, domain: str, certid: str) -> dict:
         url = self.endpoint + 'custom_certificates/{certid}'
         prikey = open(
@@ -53,9 +80,10 @@ class CFAPI:
             'type': 'sni_custom'
         }
         r = self.client.patch(url.format(
-            zone=zoneid, certid=certid), data=payload)
+            zone=zoneid, certid=certid), json=payload)
         if not r.ok:
             print('edit ssl error')
+            print(r.text)
             return
 
         try:
@@ -78,7 +106,11 @@ if __name__ == '__main__':
         certlist = list(
             filter(lambda x: x['type'] == 'legacy_custom', result['result']))
         if len(certlist) != 1:
-            pass
+            r = cf.create_ssl(zoneid=zoneid, domain=domain)
+            if not r:
+                text = '❌ SSL 上傳失敗\n' \
+                       '域名：{domain}'.format(domain=domain)
+                bot.send_message(config.CHAT_ID, text)
         else:
             certid = certlist[0]['id']
             r = cf.edit_ssl(zoneid=zoneid, certid=certid, domain=domain)
