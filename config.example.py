@@ -1,3 +1,8 @@
-from typing import List
+CF_TOKEN: str = 'Bearer xxxx'
 
-DOMAINS: List[str] = ['']
+DOMAINS: dict = {
+    'example.com': '123abcde',
+}
+
+BOT: str = '123456:aaaaa'
+CHAT_ID: int = 123
