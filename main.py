@@ -54,7 +54,7 @@ class CFAPI:
             'bundle_method': 'ubiquitous',
             'type': 'sni_custom'
         }
-        r = self.client.post(url, json=payload)
+        r = self.client.post(url.format(zone=zoneid), json=payload)
         if not r.ok:
             print('create ssl failed')
             print(r.text)
