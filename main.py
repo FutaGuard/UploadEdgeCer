@@ -104,7 +104,7 @@ if __name__ == '__main__':
         result = cf.certificate_packs_list_certificate_packs(zoneid)
 
         certlist = list(
-            filter(lambda x: x['type'] == 'legacy_custom', result['result']))
+            filter(lambda x: x['type'] in ['legacy_custom', 'sni_custom'], result['result']))
         if len(certlist) != 1:
             r = cf.create_ssl(zoneid=zoneid, domain=domain)
             if not r:
